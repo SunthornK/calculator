@@ -1,18 +1,35 @@
 from math import *
+
+
 class Model:
     def __init__(self):
+        self.expression = []
+        self.total_expression = []
         self.history = []
-        self.total_output = ""
-        self.txt_input = "0"
 
-    def calculate(self, expression):
+    def set_total_expression(self, expression):
+        self.total_expression = expression
+
+    def add_to_expression(self, value):
+        self.expression.append(str(value))
+
+    def evaluate_expression(self):
         try:
-            result = eval(expression)
-            self.history.append(expression + " = " + str(result))
-            return str(result)
-        except ValueError as e:
-            # Return error message if expression is invalid
-            return "Error: " + str(e)
+            result = eval("".join(self.expression))
+            self.history.append(f'{"".join(self.expression)} = {result}')
+            self.expression = [str(result)]
+        except Exception as e:
+            self.expression = ["Error"]
+
+    def clear_expression(self):
+        self.expression = []
+
+    def delete_last(self):
+        if self.expression:
+            self.expression.pop()
+
+    def get_expression(self):
+        return "".join(self.expression)
 
 # if event == "C":
 #     self.view.total_output = ""

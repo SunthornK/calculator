@@ -11,58 +11,61 @@ class View(tk.Tk):
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
-        self.keys = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', '.','mod']
-        self.operator = ['C','+', '-', '*', '/', '^','=' ]
-        self.total_output = ""
-        self.txt_input = "0"
+        self.title("Calculator")
+        self.keys = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', '.', 'mod']
+        self.operator = ['CLR', '+', '-', '*', '/', '^', '=']
+        self.special_operator = ['(', ')', 'π', '!', 'DEL']
+        self.functions = ['exp', 'ln', 'log10', 'log2', 'sqrt']
         self.init_components()
 
     def init_components(self):
         """create all the ui"""
         self.center_window()
-        self.minsize(400, 300)
-        self.total_display, self.display = self.display_label()
+        self.minsize(400, 500)
+        history_label = tk.Label(text='History', font=('Arial', 12))
+        history_label.pack()
+        self.history_combobox = ttk.Combobox(self, font=('Arial', 12), state='readonly')
+        self.history_combobox.pack(pady=10, expand=True, fill=tk.X)
+        self.history_combobox.bind('<<ComboboxSelected>>', self.history_combobox_selected)
+        self.display_label()
+        self.function_combobox = ttk.Combobox(self, values=self.functions, font=('Arial', 12))
+        self.function_combobox.pack(pady=10)
+        self.function_combobox.bind('<<ComboboxSelected>>', self.combobox_selected)
+
         # Create and configure keypad
+        special = Keypad(self, keynames=self.special_operator, columns=5)
+        special.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
+        special['font'] = ('Monospace', 16)
+        special.bind("<Button>", self.button_click)
+
         keypad = Keypad(self, keynames=self.keys, columns=3)
         keypad.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
         keypad['font'] = ('Monospace', 16)
-        keypad.bind("<Button>", self.controller.display_button_click)
-        keypad.bind("<Button>", self.controller.display_keypad, '+')
+        keypad.bind("<Button>", self.button_click)
 
         # Create and configure operator pad
         operators = Keypad(self, keynames=self.operator, columns=1)
         operators.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
         operators['font'] = ('Monospace', 16)
-        operators.bind("<Button>", self.controller.display_button_click)
-        operators.bind("<Button>", self.controller.display_keypad, '+')
+        operators.bind("<Button>", self.button_click)
 
-        # Bind key press event to display method
-        self.bind("<KeyPress>", self.controller.display_keypad)
+    def combobox_selected(self, event):
+        selected_function = self.function_combobox.get()
+        self.controller.process_input(selected_function)
+
+    def history_combobox_selected(self, event):
+        selected_item = self.history_combobox.get()
+        self.controller.display_selected_item(selected_item)
 
     def display_label(self):
-        total_display = tk.Label(justify='right', anchor=tk.E, text=self.total_output, **SMALL_FONT)
-        total_display.pack(expand=True, fill=tk.BOTH, padx=5)
-        display = tk.Label(justify='right', anchor=tk.E, text=self.txt_input, **BIG_FONT)
-        display.pack(expand=True, fill=tk.BOTH, padx=5)
-        return total_display, display
+        self.total_display = tk.Label(self, anchor=tk.E, text="", **SMALL_FONT)
+        self.total_display.pack(expand=True, fill=tk.BOTH, padx=10)
+        self.display = tk.Entry(self, justify='right', **BIG_FONT)
+        self.display.pack(expand=True, fill=tk.BOTH, padx=10)
 
-    def update_label(self, update_text):
-        if self.txt_input == "":
-            self.txt_input = "0"
-        elif self.txt_input == "0":
-            self.txt_input = ""
-        self.txt_input += update_text
-        self.display.config(text=self.txt_input)
-        self.total_display.config(text=self.total_output)
-
-    def replace_label(self, update_text):
-        self.txt_input = update_text
-        if self.txt_input == "":
-            self.txt_input = "0"
-        elif self.txt_input == "0":
-            self.txt_input = ""
-        self.display.config(text=self.txt_input)
-        self.total_display.config(text=self.total_output)
+    def button_click(self, event):
+        button_text = event.widget.cget("text")
+        self.controller.process_input(button_text)
 
     def center_window(self):
         self.update_idletasks()
@@ -71,6 +74,16 @@ class View(tk.Tk):
         x_offset = (self.winfo_screenwidth() - width) // 2
         y_offset = (self.winfo_screenheight() - height) // 2
         self.geometry(f"{width}x{height}+{x_offset}+{y_offset}")
+
+    def update_total_display(self, expression):
+        self.total_display.config(text=expression)
+
+    def update_display(self, expression):
+        self.display.delete(0, tk.END)
+        self.display.insert(0, expression)
+
+    def update_history_combobox(self, history):
+        self.history_combobox['values'] = history
 
     def run(self):
         self.mainloop()
